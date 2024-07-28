@@ -1,113 +1,542 @@
+"use client"
 import Image from "next/image";
+import {Label} from "@/components/ui/label";
+import {Separator} from "@/components/ui/separator";
+import Swal from 'sweetalert2'
+import {Button as NextUIButton, Input, useDisclosure} from "@nextui-org/react";
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
+import {Button} from "@/components/ui/button"
+import {useEffect, useState} from "react";
+import {CircleX, NotebookTabs, Plus} from "lucide-react";
+import {Card, CardBody} from "@nextui-org/card";
+import {AddToDB, getInvoiceNo} from "@/lib/firebaseActions";
+import BarcodeScanner from "@/components/BarcodeScanner";
+import {Modal, ModalBody, ModalContent, ModalHeader} from "@nextui-org/modal";
+
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    const [formData, setFormData] = useState<{
+        invoiceNo: string | undefined,
+        createdAt: Date | undefined,
+        preparedBy: string | undefined,
+        paidBy: string | undefined,
+        customerName: string | undefined,
+        customerEmail: string | undefined,
+        customerPhone: string | undefined,
+        issue: string | undefined,
+        discount: number | undefined,
+        subTotal: number | undefined,
+        vat: number | undefined,
+        total: number | undefined,
+        paid: number | undefined,
+        change: number | undefined,
+        balance: number | undefined,
+    }>({
+        invoiceNo: undefined,
+        createdAt: undefined,
+        preparedBy: undefined,
+        paidBy: undefined,
+        customerName: undefined,
+        customerEmail: undefined,
+        customerPhone: undefined,
+        issue: undefined,
+        discount: undefined,
+        subTotal: 0,
+        vat: 0,
+        total: 0,
+        paid: undefined,
+        change: 0,
+        balance: 0,
+    })
+
+    const [items, setItems] = useState<{
+        name: string;
+        description: string;
+        quantity: number;
+        total: number;
+        price: number;
+    }[]>([{
+        name: "",
+        description: "",
+        quantity: 1,
+        total: 0,
+        price: 0,
+    }])
+
+    const {isOpen, onOpen, onClose} = useDisclosure();
+
+    useEffect(() => {
+        let subTotal = 0
+        items.forEach(item => {
+            subTotal += item.total
+        })
+        setFormData((prev) => {
+            prev.subTotal = subTotal
+            return {...prev}
+        })
+    }, [items]);
+
+    useEffect(() => {
+        setFormData((prev) => {
+            prev.total = (prev.subTotal ?? 0) + (((prev.subTotal ?? 0) / 100) * 20) - (prev.discount ?? 0)
+            prev.vat = (((prev.subTotal ?? 0) / 100) * 20)
+            return {...prev}
+        })
+    }, [formData.subTotal, formData.discount]);
+
+    useEffect(() => {
+        setFormData((prev) => {
+            if (Number(prev.paid) >= (prev.total ?? 0)) {
+                prev.change = Number(prev.paid) - Number(prev.total ?? 0)
+            } else {
+                prev.change = 0
+            }
+            if (Number(prev.paid) <= (prev.total ?? 0)) {
+                prev.balance = Number(prev.total ?? 0) - Number(prev.paid)
+            } else {
+                prev.balance = 0
+            }
+            return {...prev}
+        })
+    }, [formData.total, formData.discount, formData.paid]);
+
+    useEffect(() => {
+        getInvoiceNo().then(res => {
+            setFormData((prev) => {
+                prev.invoiceNo = res.toString()
+                return {...prev}
+            })
+        })
+    }, []);
+
+    function resetAll() {
+        setFormData({
+            invoiceNo: undefined,
+            createdAt: undefined,
+            preparedBy: undefined,
+            paidBy: undefined,
+            customerName: undefined,
+            customerEmail: undefined,
+            customerPhone: undefined,
+            issue: undefined,
+            discount: undefined,
+            subTotal: 0,
+            vat: 0,
+            total: 0,
+            paid: undefined,
+            change: 0,
+            balance: 0,
+        })
+        setItems([{
+            name: "",
+            description: "",
+            quantity: 1,
+            total: 0,
+            price: 0,
+        }])
+        getInvoiceNo().then(res => {
+            setFormData((prev) => {
+                prev.invoiceNo = res.toString()
+                return {...prev}
+            })
+        })
+    }
+
+    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        if (items.length === 1 && (items[0].name === "" || formData.total === 0)) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Your cart is empty! Please add item name and price to continue',
+                icon: 'error',
+                confirmButtonText: 'Ok'
+            })
+        }
+        AddToDB(formData, items).then((res) => {
+            if (!res) return Swal.fire({
+                title: 'Error!',
+                text: 'Something went wrong! Please try again.',
+                icon: 'error',
+                confirmButtonText: 'Ok'
+            })
+            Swal.fire({
+                title: 'Success!',
+                text: 'Order added to the database.',
+                icon: 'success',
+                confirmButtonText: 'Ok'
+            }).then(() => {
+                resetAll()
+            })
+        })
+    }
+
+    return (
+        <div className="flex flex-col items-center justify-center h-screen space-y-2">
+            <BarcodeScanner setFormData={setFormData} setItems={setItems}/>
+            <div className="flex flex-row my-1 space-x-2 justify-between items-center w-full px-4">
+                <div className="flex flex-row space-x-2 justify-center items-center self-center">
+                    <Image src="/logo.png" height={50} width={50} alt="techy's logo" className="mt-4"/>
+                    <p className="text-3xl font-bold mt-3">Techy&apos;s POS</p>
+                </div>
+                <div className="flex flex-row space-x-2 justify-center items-center">
+                    <NextUIButton onPress={() => onOpen()} isIconOnly variant="light" aria-label="Open List">
+                        <NotebookTabs/>
+                    </NextUIButton>
+                </div>
+            </div>
+            <section className="grid grid-cols-2 items-center justify-center h-full w-full gap-2">
+                <div
+                    className="flex flex-col h-full w-full items-center justify-start border-2 border-gray-200 rounded-md">
+                    <div className="flex flex-col items-center bg-orange-100 w-full h-fit rounded-t-sm">
+                        <Label className="my-1 text-lg font-bold">Information Center</Label>
+                        <Separator/>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 w-full p-2">
+                        <Label>Invoice No.</Label>
+                        <Label>:</Label>
+                        <Label className="justify-self-end">{formData.invoiceNo ?? "Loading..."}</Label>
+                        {formData.createdAt && (
+                            <>
+                                <Label>Previously Created On</Label>
+                                <Label>:</Label>
+                                <Label
+                                    className="justify-self-end">{formData.createdAt?.toLocaleDateString()}</Label>
+                            </>
+                        )}
+                        <Label>Sub Total</Label>
+                        <Label>:</Label>
+                        <Label
+                            className="justify-self-end">£{formData.subTotal ? formData.subTotal.toFixed(2) : (0).toFixed(2)}</Label>
+                        <Label>Discount</Label>
+                        <Label>:</Label>
+                        <Label
+                            className="justify-self-end">£{formData.discount ? formData.discount.toFixed(2) : (0).toFixed(2)}</Label>
+                        <Label>VAT</Label>
+                        <Label>:</Label>
+                        <Label
+                            className="justify-self-end">£{formData.vat ? formData.vat.toFixed(2) : (0).toFixed(2)}</Label>
+                        <Label>Total</Label>
+                        <Label>:</Label>
+                        <Label
+                            className="justify-self-end">£{formData.total ? formData.total.toFixed(2) : (0).toFixed(2)}</Label>
+                        <Label>Paid</Label>
+                        <Label>:</Label>
+                        <Label
+                            className="justify-self-end">£{formData.paid ? formData.paid.toFixed(2) : (0).toFixed(2)}</Label>
+                        <Label>Change</Label>
+                        <Label>:</Label>
+                        <Label
+                            className="justify-self-end">£{formData.change ? formData.change.toFixed(2) : (0).toFixed(2)}</Label>
+                        <Label>Balance</Label>
+                        <Label>:</Label>
+                        <Label
+                            className="justify-self-end">£{formData.balance ? formData.balance.toFixed(2) : (0).toFixed(2)}</Label>
+                    </div>
+                    <form
+                        className="grid grid-cols-2 gap-2 w-full p-2"
+                        onSubmit={e => handleSubmit(e)}
+                    >
+                        <Input
+                            isRequired
+                            required
+                            type="text"
+                            size={"sm"}
+                            label="Customer Name"
+                            value={formData.customerName}
+                            onChange={e => {
+                                setFormData((prev) => {
+                                    prev.customerName = e.target.value
+                                    return {...prev}
+                                })
+                            }}
+                        />
+                        <Input
+                            type="email"
+                            label="Customer Email"
+                            size={"sm"}
+                            value={formData.customerEmail}
+                            onChange={e => {
+                                setFormData((prev) => {
+                                    prev.customerEmail = e.target.value
+                                    return {...prev}
+                                })
+                            }}
+                        />
+                        <Input
+                            type="tel"
+                            label="Customer Phone"
+                            size={"sm"}
+                            value={formData.customerPhone}
+                            onChange={e => {
+                                setFormData((prev) => {
+                                    prev.customerPhone = e.target.value
+                                    return {...prev}
+                                })
+                            }}
+                        />
+                        <Input
+                            type="text"
+                            isRequired
+                            required
+                            label="Issue"
+                            size={"sm"}
+                            value={formData.issue}
+                            onChange={e => {
+                                setFormData((prev) => {
+                                    prev.issue = e.target.value
+                                    return {...prev}
+                                })
+                            }}
+                        />
+                        <Select
+                            required
+                            value={formData.preparedBy}
+                            onValueChange={e => {
+                                setFormData((prev) => {
+                                    prev.preparedBy = e
+                                    return {...prev}
+                                })
+                            }}
+                        >
+                            <SelectTrigger className="w-full col-span-2 h-full">
+                                <SelectValue placeholder="Prepared By"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Prepared By</SelectLabel>
+                                    <SelectItem value="Arif">Arif</SelectItem>
+                                    <SelectItem value="Xender">Xender</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <Input
+                            type="number"
+                            min={0}
+                            label="Discount"
+                            size={"sm"}
+                            value={String(formData.discount)}
+                            onValueChange={e => {
+                                setFormData((prev) => {
+                                    prev.discount = Number(e)
+                                    return {...prev}
+                                })
+                            }}
+                        />
+                        <Input
+                            type="number"
+                            min={0}
+                            label="Paid"
+                            size={"sm"}
+                            value={String(formData.paid)}
+                            onValueChange={e => {
+                                setFormData((prev) => {
+                                    prev.paid = Number(e)
+                                    return {...prev}
+                                })
+                            }}
+                        />
+                        <Select
+                            value={formData.paidBy}
+                            onValueChange={e => {
+                                setFormData((prev) => {
+                                    prev.paidBy = e
+                                    return {...prev}
+                                })
+                            }}
+                        >
+                            <SelectTrigger className="w-full col-span-2">
+                                <SelectValue placeholder="Paid By"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Paid By</SelectLabel>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Card">Card</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            type="reset"
+                            onClick={(event) => {
+                                event.preventDefault()
+                                resetAll()
+                            }}
+                            className="w-full"
+                        >Reset</Button>
+                        <Button
+                            type={"submit"}
+                            className="w-full"
+                        >Save & Print</Button>
+                    </form>
+                </div>
+                <div
+                    className="flex flex-col h-full w-full items-center justify-start border-2 border-gray-200 rounded-md">
+                    <div className="flex flex-col items-center bg-orange-100 w-full h-fit rounded-t-sm">
+                        <Label className="my-1 text-lg font-bold">Cart</Label>
+                        <Separator/>
+                    </div>
+                    <div className="w-full flex flex-col space-y-2 items-center p-2 max-h-[80vh] overflow-y-auto">
+                        {items.map((item, index) => {
+                            return (
+                                <Card key={index} className="w-full min-h-[72px]">
+                                    <CardBody className="grid grid-cols-7 space-x-1">
+                                        <Input
+                                            type="text"
+                                            label="Name"
+                                            size={"sm"}
+                                            className="col-span-2"
+                                            value={item.name}
+                                            onValueChange={e => {
+                                                setItems((prev) => {
+                                                    prev[index].name = e
+                                                    return [...prev]
+                                                })
+                                            }}
+                                        />
+                                        <Input
+                                            type="text"
+                                            label="Description"
+                                            size={"sm"}
+                                            className="col-span-2"
+                                            value={item.description}
+                                            onValueChange={e => {
+                                                setItems((prev) => {
+                                                    prev[index].description = e
+                                                    return [...prev]
+                                                })
+                                            }}
+                                        />
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            label="Price"
+                                            size={"sm"}
+                                            value={String(item.price)}
+                                            onValueChange={e => {
+                                                setItems((prev) => {
+                                                    prev[index].price = Number(e)
+                                                    prev[index].total = Number(e) * prev[index].quantity
+                                                    return [...prev]
+                                                })
+                                            }}
+                                        />
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            label="Quantity"
+                                            size={"sm"}
+                                            value={String(item.quantity)}
+                                            onValueChange={e => {
+                                                setItems((prev) => {
+                                                    prev[index].quantity = Number(e)
+                                                    prev[index].total = Number(e) * prev[index].price
+                                                    return [...prev]
+                                                })
+                                            }}
+                                        />
+                                        <div className="flex flex-col items-center">
+                                            <p>Total</p>
+                                            <p>£{items[index].total.toFixed(2)}</p>
+                                        </div>
+                                    </CardBody>
+                                    {items.length > 1 && (
+                                        <NextUIButton onPress={() => {
+                                            setItems(prev => {
+                                                if (prev.length > 1) {
+                                                    prev.splice(index, 1)
+                                                }
+                                                return [...prev]
+                                            })
+                                        }} className="absolute -right-2 -top-2 min-h-10" isIconOnly variant="light"
+                                                      aria-label="Add Item">
+                                            <CircleX/>
+                                        </NextUIButton>
+                                    )}
+                                </Card>
+                            )
+                        })}
+                        <NextUIButton onPress={() => {
+                            setItems(prev => {
+                                prev.push({
+                                    name: "",
+                                    description: "",
+                                    quantity: 1,
+                                    total: 0,
+                                    price: 0,
+                                })
+                                return [...prev]
+                            })
+                        }} className="mb-48 min-h-10" isIconOnly variant="light" aria-label="Add Item">
+                            <Plus/>
+                        </NextUIButton>
+                    </div>
+                </div>
+            </section>
+            <Modal
+                backdrop={"blur"}
+                isOpen={isOpen}
+                onClose={onClose}
+                shadow={"md"}
+                size={"xl"}
+                motionProps={{
+                    variants: {
+                        enter: {
+                            y: 0,
+                            opacity: 1,
+                            transition: {
+                                duration: 0.3,
+                                ease: "easeOut",
+                            },
+                        },
+                        exit: {
+                            y: -20,
+                            opacity: 0,
+                            transition: {
+                                duration: 0.2,
+                                ease: "easeIn",
+                            },
+                        },
+                    }
+                }}
+            >
+                <ModalContent>
+                    {() => {
+
+                    return(
+                        <>
+                            <ModalHeader className="flex flex-col gap-1">Orders List</ModalHeader>
+                            <ModalBody>
+                                <p>
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                                    Nullam pulvinar risus non risus hendrerit venenatis.
+                                    Pellentesque sit amet hendrerit risus, sed porttitor quam.
+                                </p>
+                                <p>
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                                    Nullam pulvinar risus non risus hendrerit venenatis.
+                                    Pellentesque sit amet hendrerit risus, sed porttitor quam.
+                                </p>
+                                <p>
+                                    Magna exercitation reprehenderit magna aute tempor cupidatat consequat elit
+                                    dolor adipisicing. Mollit dolor eiusmod sunt ex incididunt cillum quis.
+                                    Velit duis sit officia eiusmod Lorem aliqua enim laboris do dolor eiusmod.
+                                    Et mollit incididunt nisi consectetur esse laborum eiusmod pariatur
+                                    proident Lorem eiusmod et. Culpa deserunt nostrud ad veniam.
+                                </p>
+                            </ModalBody>
+                        </>
+                        )
+                    }}
+                </ModalContent>
+            </Modal>
         </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+    );
 }
