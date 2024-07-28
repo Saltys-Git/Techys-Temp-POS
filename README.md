@@ -1,2 +1,2 @@
 # Techy's Temporary POS system.
-> www.techys-pos.mytechys.co.uk
+> https://techys-pos.mytechys.co.uk
