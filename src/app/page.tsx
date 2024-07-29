@@ -93,6 +93,11 @@ export default function Home() {
     }, [formData.subTotal, formData.discount]);
 
     useEffect(() => {
+        console.log("Items",items)
+        console.log("FormData",formData)
+    }, [items, formData]);
+    
+    useEffect(() => {
         setFormData((prev) => {
             if (Number(prev.paid) >= (prev.total ?? 0)) {
                 prev.change = Number(prev.paid) - Number(prev.total ?? 0)
