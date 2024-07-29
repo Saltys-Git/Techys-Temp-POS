@@ -34,21 +34,16 @@ interface BarcodeScannerProps {
 
 export default function BarcodeScanner({setFormData,setItems}: BarcodeScannerProps) {
     let barcodeScan = "";
-    const [value, setValue] = useState("");
     const isBrowser = () => typeof window !== "undefined";
 
     useEffect(() => {
         const handleScan = (data: string) => {
-            setValue(data);
             setTimeout(() => {
-                console.log("scanned value", value)
-                console.log("barcode Data", data)
                 getOrderData(data).then(res=>{
-                    console.log(res)
                     if(res.result && res.data){
                         setFormData({
                             invoiceNo: res.data.invoiceNo,
-                            createdAt: res.data.createdAt,
+                            createdAt: new Timestamp(res.data.createdAt.seconds,res.data.createdAt.nanoseconds).toDate(),
                             preparedBy: res.data.preparedBy,
                             paidBy: res.data.paidBy,
                             customerName: res.data.customerName,
