@@ -1,6 +1,6 @@
 "use client";
 
-import {Dispatch, SetStateAction, useEffect, useState} from "react";
+import {Dispatch, SetStateAction, useEffect} from "react";
 import {getOrderData} from "@/lib/firebaseActions";
 import Swal from "sweetalert2";
 import {Timestamp} from "@firebase/firestore";
@@ -8,21 +8,21 @@ import {Timestamp} from "@firebase/firestore";
 
 interface BarcodeScannerProps {
     setFormData: Dispatch<SetStateAction<{
-        invoiceNo: string | undefined;
+        invoiceNo: string;
         createdAt: Date | undefined;
-        preparedBy: string | undefined;
-        paidBy: string | undefined;
-        customerName: string | undefined;
-        customerEmail: string | undefined;
-        customerPhone: string | undefined;
-        issue: string | undefined;
-        discount: number | undefined;
-        subTotal: number | undefined;
-        vat: number | undefined;
-        total: number | undefined;
-        paid: number | undefined;
-        change: number | undefined;
-        balance: number | undefined
+        preparedBy: string;
+        paidBy: string;
+        customerName: string;
+        customerEmail: string;
+        customerPhone: string;
+        issue: string;
+        discount: number | string;
+        subTotal: number;
+        vat: number;
+        total: number;
+        paid: number | string;
+        change: number;
+        balance: number;
     }>>,
     setItems: Dispatch<SetStateAction<{
         name: string;
@@ -83,6 +83,7 @@ export default function BarcodeScanner({setFormData,setItems}: BarcodeScannerPro
                             confirmButtonText: 'Ok'
                         })
                     }
+                    barcodeScan = "";
                 })
             }, 50);
         };

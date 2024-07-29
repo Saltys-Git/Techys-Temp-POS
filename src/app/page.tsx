@@ -13,46 +13,49 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import {Button} from "@/components/ui/button"
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {CircleX, NotebookTabs, Plus} from "lucide-react";
 import {Card, CardBody} from "@nextui-org/card";
 import {AddToDB, getInvoiceNo} from "@/lib/firebaseActions";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import {Modal, ModalBody, ModalContent, ModalHeader} from "@nextui-org/modal";
+import PrintReceipt from "@/lib/printHandler";
 
 
 export default function Home() {
+    const resetButtonRef = useRef<HTMLButtonElement>(null)
+    const [isLoading, setIsLoading] = useState(false)
+
     const [formData, setFormData] = useState<{
-        invoiceNo: string | undefined,
-        createdAt: Date | undefined,
-        preparedBy: string | undefined,
-        paidBy: string | undefined,
-        customerName: string | undefined,
-        customerEmail: string | undefined,
-        customerPhone: string | undefined,
-        issue: string | undefined,
-        discount: number | undefined,
-        subTotal: number | undefined,
-        vat: number | undefined,
-        total: number | undefined,
-        paid: number | undefined,
-        change: number | undefined,
-        balance: number | undefined,
+        invoiceNo: string;
+        createdAt: Date | undefined;
+        preparedBy: string;
+        paidBy: string;
+        customerName: string;
+        customerEmail: string;
+        customerPhone: string;
+        issue: string;
+        discount: number | string;
+        subTotal: number;
+        vat: number;
+        total: number;
+        paid: number | string;
+        change: number;
+        balance: number;
     }>({
-        invoiceNo: undefined,
+        invoiceNo: "",
         createdAt: undefined,
-        preparedBy: undefined,
-        paidBy: undefined,
-        customerName: undefined,
-        customerEmail: undefined,
-        customerPhone: undefined,
-        issue: undefined,
-        discount: undefined,
+        preparedBy: "",
+        paidBy: "",
+        customerName: "",
+        customerEmail: "",
+        customerPhone: "",
+        issue: "",
+        discount: 0,
         subTotal: 0,
         vat: 0,
         total: 0,
-        paid: undefined,
+        paid: 0,
         change: 0,
         balance: 0,
     })
@@ -86,7 +89,7 @@ export default function Home() {
 
     useEffect(() => {
         setFormData((prev) => {
-            prev.total = (prev.subTotal ?? 0) + (((prev.subTotal ?? 0) / 100) * 20) - (prev.discount ?? 0)
+            prev.total = (prev.subTotal ?? 0) + (((prev.subTotal ?? 0) / 100) * 20) - (Number(prev.discount) ?? 0)
             prev.vat = (((prev.subTotal ?? 0) / 100) * 20)
             return {...prev}
         })
@@ -122,39 +125,6 @@ export default function Home() {
         })
     }, []);
 
-    function resetAll() {
-        setFormData({
-            invoiceNo: undefined,
-            createdAt: undefined,
-            preparedBy: undefined,
-            paidBy: undefined,
-            customerName: undefined,
-            customerEmail: undefined,
-            customerPhone: undefined,
-            issue: undefined,
-            discount: undefined,
-            subTotal: 0,
-            vat: 0,
-            total: 0,
-            paid: undefined,
-            change: 0,
-            balance: 0,
-        })
-        setItems([{
-            name: "",
-            description: "",
-            quantity: 1,
-            total: 0,
-            price: 0,
-        }])
-        getInvoiceNo().then(res => {
-            setFormData((prev) => {
-                prev.invoiceNo = res.toString()
-                return {...prev}
-            })
-        })
-    }
-
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         if (items.length === 1 && (items[0].name === "" || formData.total === 0)) {
@@ -165,6 +135,7 @@ export default function Home() {
                 confirmButtonText: 'Ok'
             })
         }
+        setIsLoading(true)
         AddToDB(formData, items).then((res) => {
             if (!res) return Swal.fire({
                 title: 'Error!',
@@ -172,13 +143,18 @@ export default function Home() {
                 icon: 'error',
                 confirmButtonText: 'Ok'
             })
-            Swal.fire({
-                title: 'Success!',
-                text: 'Order added to the database.',
-                icon: 'success',
-                confirmButtonText: 'Ok'
-            }).then(() => {
-                resetAll()
+            PrintReceipt(formData,items).then(()=>{
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Order added to the database.',
+                    icon: 'success',
+                    confirmButtonText: 'Ok'
+                }).then(() => {
+                    setIsLoading(false)
+                    if(resetButtonRef.current !== null) {
+                        resetButtonRef.current.click()
+                    }
+                })
             })
         })
     }
@@ -187,7 +163,7 @@ export default function Home() {
         <div className="flex flex-col items-center justify-center h-screen space-y-2">
             <BarcodeScanner setFormData={setFormData} setItems={setItems}/>
             <div className="flex flex-row my-1 space-x-2 justify-between items-center w-full px-4">
-                <div className="flex flex-row space-x-2 justify-center items-center self-center">
+                <div className="flex flex-row space-x-2 justify-center items-center self-center select-none">
                     <Image src="/logo.png" height={50} width={50} alt="techy's logo" className="mt-4"/>
                     <p className="text-3xl font-bold mt-3">Techy&apos;s POS</p>
                 </div>
@@ -213,7 +189,7 @@ export default function Home() {
                                 <Label>Previously Created On</Label>
                                 <Label>:</Label>
                                 <Label
-                                    className="justify-self-end">{formData.createdAt?.toLocaleDateString()}</Label>
+                                    className="justify-self-end">{formData.createdAt.toLocaleDateString()}</Label>
                             </>
                         )}
                         <Label>Sub Total</Label>
@@ -223,7 +199,7 @@ export default function Home() {
                         <Label>Discount</Label>
                         <Label>:</Label>
                         <Label
-                            className="justify-self-end">£{formData.discount ? formData.discount.toFixed(2) : (0).toFixed(2)}</Label>
+                            className="justify-self-end">£{formData.discount ? Number(formData.discount).toFixed(2) : (0).toFixed(2)}</Label>
                         <Label>VAT</Label>
                         <Label>:</Label>
                         <Label
@@ -235,7 +211,7 @@ export default function Home() {
                         <Label>Paid</Label>
                         <Label>:</Label>
                         <Label
-                            className="justify-self-end">£{formData.paid ? formData.paid.toFixed(2) : (0).toFixed(2)}</Label>
+                            className="justify-self-end">£{formData.paid ? Number(formData.paid).toFixed(2) : (0).toFixed(2)}</Label>
                         <Label>Change</Label>
                         <Label>:</Label>
                         <Label
@@ -323,27 +299,23 @@ export default function Home() {
                             </SelectContent>
                         </Select>
                         <Input
-                            type="number"
-                            min={0}
                             label="Discount"
                             size={"sm"}
-                            value={String(formData.discount)}
+                            value={formData.discount?.toString()}
                             onValueChange={e => {
                                 setFormData((prev) => {
-                                    prev.discount = Number(e)
+                                    prev.discount = e
                                     return {...prev}
                                 })
                             }}
                         />
                         <Input
-                            type="number"
-                            min={0}
                             label="Paid"
                             size={"sm"}
-                            value={String(formData.paid)}
+                            value={formData.paid?.toString()}
                             onValueChange={e => {
                                 setFormData((prev) => {
-                                    prev.paid = Number(e)
+                                    prev.paid = e
                                     return {...prev}
                                 })
                             }}
@@ -368,18 +340,54 @@ export default function Home() {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <Button
+                        <NextUIButton
+                            ref={resetButtonRef}
+                            disabled={isLoading}
+                            isLoading={isLoading}
+                            variant="shadow"
                             type="reset"
-                            onClick={(event) => {
-                                event.preventDefault()
-                                resetAll()
+                            color="danger"
+                            onPress={(event) => {
+                                setFormData({
+                                    invoiceNo: "",
+                                    createdAt: undefined,
+                                    preparedBy: "",
+                                    paidBy: "",
+                                    customerName: "",
+                                    customerEmail: "",
+                                    customerPhone: "",
+                                    issue: "",
+                                    discount: 0,
+                                    subTotal: 0,
+                                    vat: 0,
+                                    total: 0,
+                                    paid: 0,
+                                    change: 0,
+                                    balance: 0,
+                                })
+                                setItems([{
+                                    name: "",
+                                    description: "",
+                                    quantity: 1,
+                                    total: 0,
+                                    price: 0,
+                                }])
+                                getInvoiceNo().then(res => {
+                                    setFormData((prev) => {
+                                        prev.invoiceNo = res.toString()
+                                        return {...prev}
+                                    })
+                                })
                             }}
-                            className="w-full"
-                        >Reset</Button>
-                        <Button
+                            className="w-full font-bold"
+                        >Reset</NextUIButton>
+                        <NextUIButton
                             type={"submit"}
-                            className="w-full"
-                        >Save & Print</Button>
+                            isLoading={isLoading}
+                            disabled={isLoading}
+                            variant="shadow"
+                            className="w-full bg-[#f37d2d] text-white font-bold shadow-lg shadow-warning/40"
+                        >Save & Print</NextUIButton>
                     </form>
                 </div>
                 <div
