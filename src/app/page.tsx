@@ -151,9 +151,11 @@ export default function Home() {
                     confirmButtonText: 'Ok'
                 }).then(() => {
                     setIsLoading(false)
-                    if(resetButtonRef.current !== null) {
-                        resetButtonRef.current.click()
-                    }
+                    setTimeout(() => {
+                        if (resetButtonRef.current !== null) {
+                            resetButtonRef.current.click()
+                        }
+                    },500)
                 })
             })
         })
@@ -347,7 +349,7 @@ export default function Home() {
                             variant="shadow"
                             type="reset"
                             color="danger"
-                            onPress={(event) => {
+                            onPress={() => {
                                 setFormData({
                                     invoiceNo: "",
                                     createdAt: undefined,
