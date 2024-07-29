@@ -92,7 +92,7 @@ export default function BarcodeScanner({setFormData,setItems}: BarcodeScannerPro
         function handleKeyDown(e: any) {
             if (
                 e.key === "Enter" &&
-                barcodeScan.length > 5
+                barcodeScan.length > 2
             ) {
                 handleScan(barcodeScan);
                 return;
