@@ -3,6 +3,7 @@
 import {Dispatch, SetStateAction, useEffect, useState} from "react";
 import {getOrderData} from "@/lib/firebaseActions";
 import Swal from "sweetalert2";
+import {Timestamp} from "@firebase/firestore";
 
 
 interface BarcodeScannerProps {
