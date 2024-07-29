@@ -41,7 +41,9 @@ export default function BarcodeScanner({setFormData,setItems}: BarcodeScannerPro
         const handleScan = (data: string) => {
             setValue(data);
             setTimeout(() => {
-                getOrderData(value).then(res=>{
+                console.log("scanned value", value)
+                console.log("barcode Data", data)
+                getOrderData(data).then(res=>{
                     console.log(res)
                     if(res.result && res.data){
                         setFormData({
