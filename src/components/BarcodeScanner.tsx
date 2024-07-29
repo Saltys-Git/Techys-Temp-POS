@@ -42,6 +42,7 @@ export default function BarcodeScanner({setFormData,setItems}: BarcodeScannerPro
             setValue(data);
             setTimeout(() => {
                 getOrderData(value).then(res=>{
+                    console.log(res)
                     if(res.result && res.data){
                         setFormData({
                             invoiceNo: res.data.invoiceNo,
