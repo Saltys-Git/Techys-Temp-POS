@@ -14,18 +14,21 @@ import {
     SelectValue
 } from "@/components/ui/select";
 import {useEffect, useRef, useState} from "react";
-import {CircleX, NotebookTabs, Plus} from "lucide-react";
+import {CircleX, NotebookTabs, Plus, RefreshCcw} from "lucide-react";
 import {Card, CardBody} from "@nextui-org/card";
-import {AddToDB, getInvoiceNo} from "@/lib/firebaseActions";
+import {AddToDB, getInvoiceNo, getOrderDataById, getOrdersData} from "@/lib/firebaseActions";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import {Modal, ModalBody, ModalContent, ModalHeader} from "@nextui-org/modal";
+import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-org/modal";
 import PrintReceipt from "@/lib/printHandler";
+import {Spinner} from "@nextui-org/spinner";
+import {Timestamp} from "@firebase/firestore";
 
 
 export default function Home() {
     const resetButtonRef = useRef<HTMLButtonElement>(null)
     const [isLoading, setIsLoading] = useState(false)
-
+    const [isModalLoading, setIsModalLoading] = useState(false)
+    const [isOrderLoading, setIsOrderLoading] = useState(false)
     const [formData, setFormData] = useState<{
         invoiceNo: string;
         createdAt: Date | undefined;
@@ -59,7 +62,16 @@ export default function Home() {
         change: 0,
         balance: 0,
     })
-
+    const [modalData, setModalData] = useState<{
+        id: string,
+        invoiceNo: string,
+        createdAt: Date,
+        total: number,
+        customerName: string,
+        issue: string,
+        preparedBy: string,
+        paid: number
+    }[]>([])
     const [items, setItems] = useState<{
         name: string;
         description: string;
@@ -73,7 +85,6 @@ export default function Home() {
         total: 0,
         price: 0,
     }])
-
     const {isOpen, onOpen, onClose} = useDisclosure();
 
     useEffect(() => {
@@ -123,6 +134,7 @@ export default function Home() {
                 return {...prev}
             })
         })
+        getOrders()
     }, []);
 
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -143,7 +155,7 @@ export default function Home() {
                 icon: 'error',
                 confirmButtonText: 'Ok'
             })
-            PrintReceipt(formData,items).then(()=>{
+            PrintReceipt(formData, items).then(() => {
                 Swal.fire({
                     title: 'Success!',
                     text: 'Order added to the database.',
@@ -155,11 +167,22 @@ export default function Home() {
                         if (resetButtonRef.current !== null) {
                             resetButtonRef.current.click()
                         }
-                    },500)
+                    }, 500)
                 })
             })
         })
     }
+
+    function getOrders() {
+        setIsModalLoading(true)
+        getOrdersData().then(res => {
+            setIsModalLoading(false)
+            if (res.result && res.data) {
+                setModalData(res.data)
+            }
+        })
+    }
+
 
     return (
         <div className="flex flex-col items-center justify-center h-screen space-y-2">
@@ -496,6 +519,7 @@ export default function Home() {
                 </div>
             </section>
             <Modal
+                scrollBehavior="inside"
                 backdrop={"blur"}
                 isOpen={isOpen}
                 onClose={onClose}
@@ -524,30 +548,101 @@ export default function Home() {
             >
                 <ModalContent>
                     {() => {
-
-                    return(
-                        <>
-                            <ModalHeader className="flex flex-col gap-1">Orders List</ModalHeader>
-                            <ModalBody>
-                                <p>
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                                    Nullam pulvinar risus non risus hendrerit venenatis.
-                                    Pellentesque sit amet hendrerit risus, sed porttitor quam.
-                                </p>
-                                <p>
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                                    Nullam pulvinar risus non risus hendrerit venenatis.
-                                    Pellentesque sit amet hendrerit risus, sed porttitor quam.
-                                </p>
-                                <p>
-                                    Magna exercitation reprehenderit magna aute tempor cupidatat consequat elit
-                                    dolor adipisicing. Mollit dolor eiusmod sunt ex incididunt cillum quis.
-                                    Velit duis sit officia eiusmod Lorem aliqua enim laboris do dolor eiusmod.
-                                    Et mollit incididunt nisi consectetur esse laborum eiusmod pariatur
-                                    proident Lorem eiusmod et. Culpa deserunt nostrud ad veniam.
-                                </p>
-                            </ModalBody>
-                        </>
+                        return (
+                            <>
+                                <ModalHeader className="flex flex-row py-1 gap-1 items-center">
+                                    <span>Orders List</span>
+                                    <NextUIButton isLoading={isModalLoading} className={`self-end min-h-10 ${isModalLoading && "hidden"}`}
+                                                  onPress={() => getOrders()} isIconOnly variant="light" color="success"
+                                                  aria-label="Refresh List">
+                                        <RefreshCcw/>
+                                    </NextUIButton>
+                                </ModalHeader>
+                                <Separator/>
+                                <ModalBody>
+                                    {isModalLoading ? (
+                                            <Spinner label="Loading..." color="success" labelColor="success"/>
+                                        )
+                                        : (
+                                            <>
+                                                {modalData.length > 0 ? (
+                                                        <>
+                                                            {modalData.map((item, index) => {
+                                                                return (
+                                                                    <Card isPressable={!isOrderLoading} isHoverable key={index} onPress={() => {
+                                                                        setIsOrderLoading(true)
+                                                                        getOrderDataById(item.id).then(res => {
+                                                                            setIsOrderLoading(false)
+                                                                            if (res.result && res.data) {
+                                                                                setFormData({
+                                                                                    invoiceNo: res.data.invoiceNo,
+                                                                                    createdAt: new Timestamp(res.data.createdAt.seconds,res.data.createdAt.nanoseconds).toDate(),
+                                                                                    preparedBy: res.data.preparedBy,
+                                                                                    paidBy: res.data.paidBy,
+                                                                                    customerName: res.data.customerName,
+                                                                                    customerEmail: res.data.customerEmail,
+                                                                                    customerPhone: res.data.customerPhone,
+                                                                                    issue: res.data.issue,
+                                                                                    discount: res.data.discount,
+                                                                                    subTotal: res.data.subTotal,
+                                                                                    vat: res.data.vat,
+                                                                                    total: res.data.total,
+                                                                                    paid: res.data.paid,
+                                                                                    change: res.data.change,
+                                                                                    balance: res.data.balance,
+                                                                                })
+                                                                                res.data.items.map((item: any, index: number) => {
+                                                                                    if (index === 0) {
+                                                                                        setItems([item])
+                                                                                    } else {
+                                                                                        setItems(prev => {
+                                                                                            prev.push(item)
+                                                                                            return [...prev]
+                                                                                        })
+                                                                                    }
+                                                                                })
+                                                                                Swal.fire({
+                                                                                    title: 'Success!',
+                                                                                    text: 'Order place to the POS.',
+                                                                                    icon: 'success',
+                                                                                    confirmButtonText: 'Ok'
+                                                                                })
+                                                                            }else{
+                                                                                Swal.fire({
+                                                                                    title: 'Error!',
+                                                                                    text: res.error === "Not Found" ? "Order not found in the database." : "Something went wrong. Please try again.",
+                                                                                    icon: 'error',
+                                                                                    confirmButtonText: 'Ok'
+                                                                                })
+                                                                            }
+                                                                        })
+                                                                    }} className="min-h-[140px]">
+                                                                        <CardBody className="grid grid-cols-2 gap-1">
+                                                                            <p>Invoice No: {item.invoiceNo}</p>
+                                                                            <p>Prepared By: {item.preparedBy}</p>
+                                                                            <p className="col-span-2">Created On: {item.createdAt.toUTCString()}</p>
+                                                                            <p>Customer Name: {item.customerName}</p>
+                                                                            <p>Issue: {item.issue}</p>
+                                                                            <p>Total Amount: £{item.total.toFixed(2)}</p>
+                                                                            <p>Paid Amount: £{item.paid.toFixed(2)}</p>
+                                                                        </CardBody>
+                                                                    </Card>
+                                                                )
+                                                            })}
+                                                        </>
+                                                    )
+                                                    :
+                                                    (
+                                                        <p className="text-xl py-8 w-full text-center">Something went
+                                                            wrong. Please
+                                                            press refresh.</p>
+                                                    )}
+                                            </>
+                                        )
+                                    }
+                                </ModalBody>
+                                <ModalFooter></ModalFooter>
+                            </>
                         )
                     }}
                 </ModalContent>

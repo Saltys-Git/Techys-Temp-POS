@@ -1,9 +1,7 @@
 import type {Metadata} from "next";
-import {Inter} from "next/font/google";
+import {Inter as FontSans} from "next/font/google";
 import "./globals.css";
-import { Inter as FontSans } from "next/font/google"
-import { cn } from "@/lib/utils"
-import BarcodeScanner from "@/components/BarcodeScanner";
+import {cn} from "@/lib/utils"
 import {Providers} from "@/components/Providers";
 
 const fontSans = FontSans({

@@ -3,12 +3,12 @@
 import {
     addDoc,
     collection,
-    doc,
+    doc, getDoc,
     getDocs,
     limit,
     orderBy,
     query,
-    serverTimestamp,
+    serverTimestamp, Timestamp,
     updateDoc,
     where,
 } from "@firebase/firestore";
@@ -57,11 +57,11 @@ export async function AddToDB(formData: {
                 customerEmail: formData.customerEmail,
                 customerPhone: formData.customerPhone,
                 issue: formData.issue,
-                discount: formData.discount,
+                discount: Number(formData.discount),
                 subTotal: formData.subTotal,
                 vat: formData.vat,
                 total: formData.total,
-                paid: formData.paid,
+                paid: Number(formData.paid),
                 change: formData.change,
                 balance: formData.balance,
                 items: items
@@ -102,6 +102,53 @@ export async function getOrderData(invoiceNo: string) {
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) return {error: "Not Found", result: false}
         return {result: true, data: querySnapshot.docs[0].data()}
+    } catch (error: any) {
+        return {error: error.message, result: false}
+    }
+
+}
+
+export async function getOrderDataById(id: string) {
+    try {
+        const documentSnapshot = await getDoc(doc(fireStore, "Orders", id));
+        if (!documentSnapshot.exists()) return {error: "Not Found", result: false}
+        return {result: true, data: documentSnapshot.data()}
+    } catch (error: any) {
+        return {error: error.message, result: false}
+    }
+
+}
+
+export async function getOrdersData() {
+    try {
+        const q = query(collection(fireStore, "Orders"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const dataArray:{
+            id: string;
+            invoiceNo: string;
+            createdAt: Date;
+            total: number;
+            customerName: string;
+            issue: string;
+            preparedBy: string;
+            paid: number;
+        }[] = []
+        try{
+            querySnapshot.forEach((order)=>{
+                dataArray.push({
+                    id: order.id,
+                    invoiceNo: order.data().invoiceNo,
+                    createdAt: new Timestamp(order.data().createdAt.seconds,order.data().createdAt.nanoseconds).toDate(),
+                    preparedBy: order.data().preparedBy,
+                    customerName: order.data().customerName,
+                    issue: order.data().issue,
+                    total: order.data().total,
+                    paid: order.data().paid,
+                })
+            })
+        }finally {
+            return {result: true, data: dataArray}
+        }
     } catch (error: any) {
         return {error: error.message, result: false}
     }
