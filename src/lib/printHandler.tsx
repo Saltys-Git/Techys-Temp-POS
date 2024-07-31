@@ -75,7 +75,7 @@ export default async function PrintReceipt(formData: {
                 flexDirection: "column",
                 // backgroundColor: "#ff0000",
                 height: "auto",
-                paddingTop: 16
+                paddingTop: 4
             }}
         >
             <View
@@ -111,7 +111,7 @@ export default async function PrintReceipt(formData: {
                         marginBottom: "1px",
                     }}
                 >
-                    Techy&apos;s World Ltd
+                    Techy&apos;s
                 </Text>
                 <View
                     style={{
