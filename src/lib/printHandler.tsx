@@ -75,7 +75,6 @@ export default async function PrintReceipt(formData: {
                 flexDirection: "column",
                 // backgroundColor: "#ff0000",
                 height: "auto",
-                paddingTop: 4
             }}
         >
             <View
