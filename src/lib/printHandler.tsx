@@ -70,7 +70,7 @@ export default async function PrintReceipt(formData: {
     const barcode = canvas.toDataURL();
     const OrderReceipt = (<Document title={"Invoice No-"+formData.invoiceNo}>
         <Page
-            size={{width: 184.4, height: undefined}}
+            size={{width: 164.4, height: undefined}}
             style={{
                 flexDirection: "column",
                 // backgroundColor: "#ff0000",
