@@ -321,10 +321,16 @@ export default function Home() {
                         <Input
                             label="Discount"
                             size={"sm"}
-                            value={formData.discount?.toString()}
+                            type="number"
+                            required
+                            radius="sm"
+                            inputMode="numeric"
+                            min={0}
+                            pattern="[0-9]*"
+                            value={formData.discount?formData.discount.toString() : "0"}
                             onValueChange={e => {
                                 setFormData((prev) => {
-                                    prev.discount = e
+                                    prev.discount = Number(e)
                                     return {...prev}
                                 })
                             }}
@@ -332,10 +338,16 @@ export default function Home() {
                         <Input
                             label="Paid"
                             size={"sm"}
-                            value={formData.paid?.toString()}
+                            type="number"
+                            required
+                            radius="sm"
+                            inputMode="numeric"
+                            min={0}
+                            pattern="[0-9]*"
+                            value={formData.paid?formData.paid.toString():"0"}
                             onValueChange={e => {
                                 setFormData((prev) => {
-                                    prev.paid = e
+                                    prev.paid = Number(e)
                                     return {...prev}
                                 })
                             }}
@@ -452,6 +464,10 @@ export default function Home() {
                                             min={0}
                                             label="Price"
                                             size={"sm"}
+                                            required
+                                            radius="sm"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             value={String(item.price)}
                                             onValueChange={e => {
                                                 setItems((prev) => {
@@ -466,6 +482,10 @@ export default function Home() {
                                             min={1}
                                             label="Quantity"
                                             size={"sm"}
+                                            required
+                                            radius="sm"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             value={String(item.quantity)}
                                             onValueChange={e => {
                                                 setItems((prev) => {
