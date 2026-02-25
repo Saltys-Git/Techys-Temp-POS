@@ -6,8 +6,10 @@ import {
     doc, getDoc,
     getDocs,
     limit,
+    or,
     orderBy,
     query,
+    QueryFieldFilterConstraint,
     serverTimestamp, Timestamp,
     updateDoc,
     where,
@@ -18,7 +20,13 @@ import {fireStore} from "@/lib/firebase";
 export async function getInvoiceNo() {
     const q = query(collection(fireStore, "Orders"), orderBy("createdAt", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
-    return Number(querySnapshot.docs[0].data().invoiceNo) + 1;
+    const invoiceNo = querySnapshot.docs[0].data().invoiceNo
+    if (invoiceNo.startsWith("S1-") || invoiceNo.startsWith("S2-")) {
+        const result = invoiceNo.slice(3);
+        return Number(result) + 1;
+    }else{
+        return Number(invoiceNo) + 1;
+    }
 }
 
 export async function AddToDB(formData: {
@@ -119,6 +127,37 @@ export async function getOrderDataById(id: string) {
 
 }
 
+export async function getCustomerData(data:string) {
+    try {
+        const q = query(collection(fireStore, "Orders"),
+        or(where("customerName", "==", data),where("customerPhone", "==", data)));
+        const querySnapshot = await getDocs(q);
+        const dataArray:{
+            invoiceNo: string;
+            createdAt: Date;
+            customerName: string;
+            customerEmail: string;
+            customerPhone: string;
+        }[] = []
+        try{
+            querySnapshot.forEach((order)=>{
+                dataArray.push({
+                    invoiceNo: order.data().invoiceNo,
+                    createdAt: new Timestamp(order.data().createdAt.seconds,order.data().createdAt.nanoseconds).toDate(),
+                    customerName: order.data().customerName,
+                    customerEmail: order.data().customerEmail,
+                    customerPhone: order.data().customerPhone,
+                })
+            })
+        }finally {
+            return {result: true, data: dataArray}
+        }
+    } catch (error: any) {
+        return {error: error.message, result: false}
+    }
+
+}
+
 export async function getOrdersData() {
     try {
         const q = query(collection(fireStore, "Orders"), orderBy("createdAt", "desc"));
@@ -154,3 +193,4 @@ export async function getOrdersData() {
     }
 
 }
+

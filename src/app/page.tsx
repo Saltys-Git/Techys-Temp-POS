@@ -14,21 +14,19 @@ import {
     SelectValue
 } from "@/components/ui/select";
 import {useEffect, useRef, useState} from "react";
-import {CircleX, NotebookTabs, Plus, RefreshCcw} from "lucide-react";
+import {CircleX, Plus} from "lucide-react";
 import {Card, CardBody} from "@nextui-org/card";
-import {AddToDB, getInvoiceNo, getOrderDataById, getOrdersData} from "@/lib/firebaseActions";
+import {AddToDB, getInvoiceNo} from "@/lib/firebaseActions";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-org/modal";
 import PrintReceipt from "@/lib/printHandler";
-import {Spinner} from "@nextui-org/spinner";
-import {Timestamp} from "@firebase/firestore";
+import UserAddDial from "@/components/UserAddDial";
+import OrderList from "@/components/OrderList";
+import SelectStoreModal from "@/components/SelectStoreModal";
 
 
 export default function Home() {
     const resetButtonRef = useRef<HTMLButtonElement>(null)
     const [isLoading, setIsLoading] = useState(false)
-    const [isModalLoading, setIsModalLoading] = useState(false)
-    const [isOrderLoading, setIsOrderLoading] = useState(false)
     const [formData, setFormData] = useState<{
         invoiceNo: string;
         createdAt: Date | undefined;
@@ -62,16 +60,6 @@ export default function Home() {
         change: 0,
         balance: 0,
     })
-    const [modalData, setModalData] = useState<{
-        id: string,
-        invoiceNo: string,
-        createdAt: Date,
-        total: number,
-        customerName: string,
-        issue: string,
-        preparedBy: string,
-        paid: number
-    }[]>([])
     const [items, setItems] = useState<{
         name: string;
         description: string;
@@ -85,7 +73,6 @@ export default function Home() {
         total: 0,
         price: 0,
     }])
-    const {isOpen, onOpen, onClose} = useDisclosure();
 
     useEffect(() => {
         let subTotal = 0
@@ -129,7 +116,6 @@ export default function Home() {
                 return {...prev}
             })
         })
-        getOrders()
     }, []);
 
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -168,30 +154,83 @@ export default function Home() {
         })
     }
 
-    function getOrders() {
-        setIsModalLoading(true)
-        getOrdersData().then(res => {
-            setIsModalLoading(false)
-            if (res.result && res.data) {
-                setModalData(res.data)
-            }
+    function updateCustomer(data:{
+            customerName: string;
+            customerEmail: string;
+            customerPhone: string;
+        }){
+            setFormData(prev=>{
+                prev.customerName = data.customerName
+                prev.customerEmail = data.customerEmail
+                prev.customerPhone = data.customerPhone
+                return {...prev}
+            })
+    }
+
+    function updateForm(data:{
+        invoiceNo: string;
+        createdAt: Date | undefined;
+        preparedBy: string;
+        paidBy: string;
+        customerName: string;
+        customerEmail: string;
+        customerPhone: string;
+        issue: string;
+        discount: number | string;
+        subTotal: number;
+        vat: number;
+        total: number;
+        paid: number | string;
+        change: number;
+        balance: number;
+    }){
+        setFormData({
+            invoiceNo: data.invoiceNo,
+            createdAt: data.createdAt,
+            preparedBy: data.preparedBy,
+            paidBy: data.paidBy,
+            customerName: data.customerName,
+            customerEmail: data.customerEmail,
+            customerPhone: data.customerPhone,
+            issue: data.issue,
+            discount: data.discount,
+            subTotal: data.subTotal,
+            vat: data.vat,
+            total: data.total,
+            paid: data.paid,
+            change: data.change,
+            balance: data.balance,
+        })
+    }
+
+    function updateItem(data:{
+        name: string;
+        description: string;
+        quantity: number;
+        total: number;
+        price: number;
+    }[]){
+        setItems(data)
+    }
+
+    function updateStore(store: string){
+        setFormData(prev=>{
+            prev.invoiceNo = store +'-'+prev.invoiceNo
+            return {...prev}
         })
     }
 
 
     return (
         <div className="flex flex-col items-center justify-center h-screen space-y-2">
+            <SelectStoreModal updateStore={updateStore}/>
             <BarcodeScanner setFormData={setFormData} setItems={setItems}/>
             <div className="flex flex-row my-1 space-x-2 justify-between items-center w-full px-4">
                 <div className="flex flex-row space-x-2 justify-center items-center self-center select-none">
                     <Image src="/logo.png" height={50} width={50} alt="techy's logo" className="mt-4"/>
                     <p className="text-3xl font-bold mt-3">Techy&apos;s POS</p>
                 </div>
-                <div className="flex flex-row space-x-2 justify-center items-center">
-                    <NextUIButton onPress={() => onOpen()} isIconOnly variant="light" aria-label="Open List">
-                        <NotebookTabs/>
-                    </NextUIButton>
-                </div>
+                <OrderList updateForm={updateForm} updateItem={updateItem}/>
             </div>
             <section className="grid grid-cols-2 items-center justify-center h-full w-full gap-2">
                 <div
@@ -241,6 +280,7 @@ export default function Home() {
                         <Label
                             className="justify-self-end">£{formData.balance ? formData.balance.toFixed(2) : (0).toFixed(2)}</Label>
                     </div>
+                    <UserAddDial updateCustomer={updateCustomer}/>
                     <form
                         className="grid grid-cols-2 gap-2 w-full p-2"
                         onSubmit={e => handleSubmit(e)}
@@ -314,42 +354,47 @@ export default function Home() {
                                 <SelectGroup>
                                     <SelectLabel>Prepared By</SelectLabel>
                                     <SelectItem value="Arif">Arif</SelectItem>
-                                    <SelectItem value="Xender">Xender</SelectItem>
+                                    <SelectItem value="Shakil">Shakil</SelectItem>
+                                    <SelectItem value="Parvinder">Parvinder</SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                         <Input
                             label="Discount"
-                            size={"sm"}
-                            type="number"
+                            size="sm"
+                            type="text"
                             required
                             radius="sm"
-                            inputMode="numeric"
+                            pattern="^\d*\.?\d*$"
                             min={0}
-                            pattern="[0-9]*"
-                            value={formData.discount?formData.discount.toString() : "0"}
-                            onValueChange={e => {
-                                setFormData((prev) => {
-                                    prev.discount = Number(e)
-                                    return {...prev}
-                                })
-                            }}
-                        />
+                            value={(formData.discount ?? 0).toString()}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (/^\d*\.?\d*$/.test(value)) {
+                                    setFormData((prev) => ({
+                                    ...prev,
+                                    discount: value === '' ? 0: value,
+                                    }));
+                                }
+                                }}
+                            />
                         <Input
                             label="Paid"
                             size={"sm"}
-                            type="number"
+                            type="text"
                             required
                             radius="sm"
-                            inputMode="numeric"
                             min={0}
-                            pattern="[0-9]*"
-                            value={formData.paid?formData.paid.toString():"0"}
-                            onValueChange={e => {
-                                setFormData((prev) => {
-                                    prev.paid = Number(e)
-                                    return {...prev}
-                                })
+                            pattern="^\d*\.?\d*$"
+                            value={(formData.paid ?? 0).toString()}
+                            onChange={e => {
+                                const value = e.target.value;
+                                if (/^\d*\.?\d*$/.test(value)) {
+                                    setFormData((prev) => ({
+                                    ...prev,
+                                    paid: value === '' ? 0: value,
+                                    }));
+                                }
                             }}
                         />
                         <Select
@@ -533,135 +578,6 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-            <Modal
-                scrollBehavior="inside"
-                backdrop={"blur"}
-                isOpen={isOpen}
-                onClose={onClose}
-                shadow={"md"}
-                size={"xl"}
-                motionProps={{
-                    variants: {
-                        enter: {
-                            y: 0,
-                            opacity: 1,
-                            transition: {
-                                duration: 0.3,
-                                ease: "easeOut",
-                            },
-                        },
-                        exit: {
-                            y: -20,
-                            opacity: 0,
-                            transition: {
-                                duration: 0.2,
-                                ease: "easeIn",
-                            },
-                        },
-                    }
-                }}
-            >
-                <ModalContent>
-                    {() => {
-                        return (
-                            <>
-                                <ModalHeader className="flex flex-row py-1 gap-1 items-center">
-                                    <span>Orders List</span>
-                                    <NextUIButton isLoading={isModalLoading} className={`self-end min-h-10 ${isModalLoading && "hidden"}`}
-                                                  onPress={() => getOrders()} isIconOnly variant="light" color="success"
-                                                  aria-label="Refresh List">
-                                        <RefreshCcw/>
-                                    </NextUIButton>
-                                </ModalHeader>
-                                <Separator/>
-                                <ModalBody>
-                                    {isModalLoading ? (
-                                            <Spinner label="Loading..." color="success" labelColor="success"/>
-                                        )
-                                        : (
-                                            <>
-                                                {modalData.length > 0 ? (
-                                                        <>
-                                                            {modalData.map((item, index) => {
-                                                                return (
-                                                                    <Card isPressable={!isOrderLoading} isHoverable key={index} onPress={() => {
-                                                                        setIsOrderLoading(true)
-                                                                        getOrderDataById(item.id).then(res => {
-                                                                            setIsOrderLoading(false)
-                                                                            if (res.result && res.data) {
-                                                                                setFormData({
-                                                                                    invoiceNo: res.data.invoiceNo,
-                                                                                    createdAt: new Timestamp(res.data.createdAt.seconds,res.data.createdAt.nanoseconds).toDate(),
-                                                                                    preparedBy: res.data.preparedBy,
-                                                                                    paidBy: res.data.paidBy,
-                                                                                    customerName: res.data.customerName,
-                                                                                    customerEmail: res.data.customerEmail,
-                                                                                    customerPhone: res.data.customerPhone,
-                                                                                    issue: res.data.issue,
-                                                                                    discount: res.data.discount,
-                                                                                    subTotal: res.data.subTotal,
-                                                                                    vat: res.data.vat,
-                                                                                    total: res.data.total,
-                                                                                    paid: res.data.paid,
-                                                                                    change: res.data.change,
-                                                                                    balance: res.data.balance,
-                                                                                })
-                                                                                res.data.items.map((item: any, index: number) => {
-                                                                                    if (index === 0) {
-                                                                                        setItems([item])
-                                                                                    } else {
-                                                                                        setItems(prev => {
-                                                                                            prev.push(item)
-                                                                                            return [...prev]
-                                                                                        })
-                                                                                    }
-                                                                                })
-                                                                                Swal.fire({
-                                                                                    title: 'Success!',
-                                                                                    text: 'Order place to the POS.',
-                                                                                    icon: 'success',
-                                                                                    confirmButtonText: 'Ok'
-                                                                                })
-                                                                            }else{
-                                                                                Swal.fire({
-                                                                                    title: 'Error!',
-                                                                                    text: res.error === "Not Found" ? "Order not found in the database." : "Something went wrong. Please try again.",
-                                                                                    icon: 'error',
-                                                                                    confirmButtonText: 'Ok'
-                                                                                })
-                                                                            }
-                                                                        })
-                                                                    }} className="min-h-[140px]">
-                                                                        <CardBody className="grid grid-cols-2 gap-1">
-                                                                            <p>Invoice No: {item.invoiceNo}</p>
-                                                                            <p>Prepared By: {item.preparedBy}</p>
-                                                                            <p className="col-span-2">Created On: {item.createdAt.toUTCString()}</p>
-                                                                            <p>Customer Name: {item.customerName}</p>
-                                                                            <p>Issue: {item.issue}</p>
-                                                                            <p>Total Amount: £{item.total.toFixed(2)}</p>
-                                                                            <p>Paid Amount: £{item.paid.toFixed(2)}</p>
-                                                                        </CardBody>
-                                                                    </Card>
-                                                                )
-                                                            })}
-                                                        </>
-                                                    )
-                                                    :
-                                                    (
-                                                        <p className="text-xl py-8 w-full text-center">Something went
-                                                            wrong. Please
-                                                            press refresh.</p>
-                                                    )}
-                                            </>
-                                        )
-                                    }
-                                </ModalBody>
-                                <ModalFooter></ModalFooter>
-                            </>
-                        )
-                    }}
-                </ModalContent>
-            </Modal>
         </div>
     );
 }
