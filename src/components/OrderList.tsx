@@ -182,8 +182,8 @@ export default function OrderList({ updateForm, updateItem }: ChildProps){
                                                                             <p className="col-span-2">Created On: {item.createdAt.toUTCString()}</p>
                                                                             <p>Customer Name: {item.customerName}</p>
                                                                             <p>Issue: {item.issue}</p>
-                                                                            <p>Total Amount: £{item.total.toFixed(2)}</p>
-                                                                            <p>Paid Amount: £{item.paid.toFixed(2)}</p>
+                                                                            <p>Total Amount: £{item.total}</p>
+                                                                            <p>Paid Amount: £{item.paid}</p>
                                                                         </CardBody>
                                                                     </Card>
                                                                 )

@@ -127,6 +127,16 @@ export default function Home() {
                 icon: 'error',
                 confirmButtonText: 'Ok'
             })
+            return
+        }
+        if (formData.preparedBy === "" || formData.paidBy === "") {
+            Swal.fire({
+                title: 'Error!',
+                text: `Please select ${formData.preparedBy === ""? 'who is prepairing the order' : 'how is customer paying'}`,
+                icon: 'error',
+                confirmButtonText: 'Ok'
+            })
+            return
         }
         setIsLoading(true)
         AddToDB(formData, items).then((res) => {
@@ -398,6 +408,7 @@ export default function Home() {
                             }}
                         />
                         <Select
+                            required
                             value={formData.paidBy}
                             onValueChange={e => {
                                 setFormData((prev) => {
@@ -414,6 +425,7 @@ export default function Home() {
                                     <SelectLabel>Paid By</SelectLabel>
                                     <SelectItem value="Cash">Cash</SelectItem>
                                     <SelectItem value="Card">Card</SelectItem>
+                                    <SelectItem value="Bacs">Bacs</SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
