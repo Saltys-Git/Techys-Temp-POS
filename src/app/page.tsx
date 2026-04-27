@@ -27,6 +27,7 @@ import SelectStoreModal from "@/components/SelectStoreModal";
 export default function Home() {
     const resetButtonRef = useRef<HTMLButtonElement>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [storeName, setStoreName] = useState('S1')
     const [formData, setFormData] = useState<{
         invoiceNo: string;
         createdAt: Date | undefined;
@@ -224,6 +225,7 @@ export default function Home() {
     }
 
     function updateStore(store: string){
+        setStoreName(store)
         setFormData(prev=>{
             prev.invoiceNo = store +'-'+prev.invoiceNo
             return {...prev}
@@ -365,7 +367,7 @@ export default function Home() {
                                     <SelectLabel>Prepared By</SelectLabel>
                                     <SelectItem value="Arif">Arif</SelectItem>
                                     <SelectItem value="Shakil">Shakil</SelectItem>
-                                    <SelectItem value="Parvinder">Parvinder</SelectItem>
+                                    <SelectItem value="Siam">Siam</SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
@@ -463,7 +465,7 @@ export default function Home() {
                                 }])
                                 getInvoiceNo().then(res => {
                                     setFormData((prev) => {
-                                        prev.invoiceNo = res.toString()
+                                        prev.invoiceNo = storeName +'-'+res.toString()
                                         return {...prev}
                                     })
                                 })
