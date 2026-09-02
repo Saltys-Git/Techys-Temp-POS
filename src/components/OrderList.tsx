@@ -190,8 +190,8 @@ export default function OrderList({ updateForm, updateItem }: ChildProps){
                                                                             <p className="col-span-2">Created On: {item.createdAt.toUTCString()}</p>
                                                                             <p className="col-span-2">Items:</p>
                                                                             <ul className="col-span-2 list-decimal list-inside">
-                                                                                {item.items.length > 0 && item.items.map((i)=>
-                                                                                    <li>{i.name} - £{i.total}</li>
+                                                                                {item.items.length > 0 && item.items.map((i,index)=>
+                                                                                    <li key={index}>{i.name} - £{i.total}</li>
                                                                                 )}
                                                                             </ul>
                                                                         </CardBody>
