@@ -2,7 +2,7 @@ import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-
 import {Button as NextUIButton, useDisclosure, Card, CardBody, Spinner, Input} from "@nextui-org/react";
 import { Separator } from "./ui/separator";
 import { useEffect, useState } from "react";
-import { NotebookTabs, RefreshCcw, Search } from 'lucide-react';
+import { NotebookTabs, RefreshCcw } from 'lucide-react';
 import Swal from "sweetalert2";
 import { getOrderDataById, getOrdersData } from "@/lib/firebaseActions";
 import {Timestamp} from "@firebase/firestore";
@@ -49,7 +49,11 @@ export default function OrderList({ updateForm, updateItem }: ChildProps){
         customerName: string,
         issue: string,
         preparedBy: string,
-        paid: number
+        paid: number,
+        items: {
+            name: string;
+            total: number;
+        }[]
     }[]>([])
 
     function getOrders() {
@@ -175,15 +179,21 @@ export default function OrderList({ updateForm, updateItem }: ChildProps){
                                                                                 })
                                                                             }
                                                                         })
-                                                                    }} className="min-h-[140px]">
+                                                                    }} className="min-h-[190px]">
                                                                         <CardBody className="grid grid-cols-2 gap-1">
                                                                             <p>Invoice No: {item.invoiceNo}</p>
                                                                             <p>Prepared By: {item.preparedBy}</p>
-                                                                            <p className="col-span-2">Created On: {item.createdAt.toUTCString()}</p>
                                                                             <p>Customer Name: {item.customerName}</p>
                                                                             <p>Issue: {item.issue}</p>
                                                                             <p>Total Amount: £{item.total}</p>
                                                                             <p>Paid Amount: £{item.paid}</p>
+                                                                            <p className="col-span-2">Created On: {item.createdAt.toUTCString()}</p>
+                                                                            <p className="col-span-2">Items:</p>
+                                                                            <ul className="col-span-2 list-decimal list-inside">
+                                                                                {item.items.length > 0 && item.items.map((i)=>
+                                                                                    <li>{i.name} - £{i.total}</li>
+                                                                                )}
+                                                                            </ul>
                                                                         </CardBody>
                                                                     </Card>
                                                                 )

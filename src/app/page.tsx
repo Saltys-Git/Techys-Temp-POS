@@ -3,7 +3,7 @@ import Image from "next/image";
 import {Label} from "@/components/ui/label";
 import {Separator} from "@/components/ui/separator";
 import Swal from 'sweetalert2'
-import {Button as NextUIButton, Input, useDisclosure} from "@nextui-org/react";
+import {Button as NextUIButton, Input} from "@nextui-org/react";
 import {
     Select,
     SelectContent,
@@ -22,6 +22,7 @@ import PrintReceipt from "@/lib/printHandler";
 import UserAddDial from "@/components/UserAddDial";
 import OrderList from "@/components/OrderList";
 import SelectStoreModal from "@/components/SelectStoreModal";
+import {Checkbox} from "@nextui-org/checkbox";
 
 
 export default function Home() {
@@ -61,6 +62,9 @@ export default function Home() {
         change: 0,
         balance: 0,
     })
+
+    const [printReceipt, setPrintReceipt] = useState(true)
+    const [printLabel, setPrintLabel] = useState(false)
     const [items, setItems] = useState<{
         name: string;
         description: string;
@@ -92,7 +96,16 @@ export default function Home() {
             prev.vat = (((prev.subTotal ?? 0) / 100) * 20)
             return {...prev}
         })
+        console.log("called on subtotal and discount")
     }, [formData.subTotal, formData.discount]);
+
+    useEffect(() => {
+        setFormData((prev) => {
+            prev.discount = prev.vat
+            return {...prev}
+        })
+        console.log("called on subtotal")
+    }, [formData.subTotal]);
 
     useEffect(() => {
         setFormData((prev) => {
@@ -133,7 +146,7 @@ export default function Home() {
         if (formData.preparedBy === "" || formData.paidBy === "") {
             Swal.fire({
                 title: 'Error!',
-                text: `Please select ${formData.preparedBy === ""? 'who is prepairing the order' : 'how is customer paying'}`,
+                text: `Please select ${formData.preparedBy === "" ? 'who is prepairing the order' : 'how is customer paying'}`,
                 icon: 'error',
                 confirmButtonText: 'Ok'
             })
@@ -147,7 +160,23 @@ export default function Home() {
                 icon: 'error',
                 confirmButtonText: 'Ok'
             })
-            PrintReceipt(formData, items).then(() => {
+            if(printReceipt){
+                PrintReceipt(formData, items).then(() => {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Order added to the database.',
+                        icon: 'success',
+                        confirmButtonText: 'Ok'
+                    }).then(() => {
+                        setIsLoading(false)
+                        setTimeout(() => {
+                            if (resetButtonRef.current !== null) {
+                                resetButtonRef.current.click()
+                            }
+                        }, 500)
+                    })
+                })
+            }else{
                 Swal.fire({
                     title: 'Success!',
                     text: 'Order added to the database.',
@@ -161,24 +190,24 @@ export default function Home() {
                         }
                     }, 500)
                 })
-            })
+            }
         })
     }
 
-    function updateCustomer(data:{
-            customerName: string;
-            customerEmail: string;
-            customerPhone: string;
-        }){
-            setFormData(prev=>{
-                prev.customerName = data.customerName
-                prev.customerEmail = data.customerEmail
-                prev.customerPhone = data.customerPhone
-                return {...prev}
-            })
+    function updateCustomer(data: {
+        customerName: string;
+        customerEmail: string;
+        customerPhone: string;
+    }) {
+        setFormData(prev => {
+            prev.customerName = data.customerName
+            prev.customerEmail = data.customerEmail
+            prev.customerPhone = data.customerPhone
+            return {...prev}
+        })
     }
 
-    function updateForm(data:{
+    function updateForm(data: {
         invoiceNo: string;
         createdAt: Date | undefined;
         preparedBy: string;
@@ -194,7 +223,7 @@ export default function Home() {
         paid: number | string;
         change: number;
         balance: number;
-    }){
+    }) {
         setFormData({
             invoiceNo: data.invoiceNo,
             createdAt: data.createdAt,
@@ -214,20 +243,20 @@ export default function Home() {
         })
     }
 
-    function updateItem(data:{
+    function updateItem(data: {
         name: string;
         description: string;
         quantity: number;
         total: number;
         price: number;
-    }[]){
+    }[]) {
         setItems(data)
     }
 
-    function updateStore(store: string){
+    function updateStore(store: string) {
         setStoreName(store)
-        setFormData(prev=>{
-            prev.invoiceNo = store +'-'+prev.invoiceNo
+        setFormData(prev => {
+            prev.invoiceNo = store + '-' + prev.invoiceNo
             return {...prev}
         })
     }
@@ -384,12 +413,12 @@ export default function Home() {
                                 const value = e.target.value;
                                 if (/^\d*\.?\d*$/.test(value)) {
                                     setFormData((prev) => ({
-                                    ...prev,
-                                    discount: value === '' ? 0: value,
+                                        ...prev,
+                                        discount: value === '' ? 0 : value,
                                     }));
                                 }
-                                }}
-                            />
+                            }}
+                        />
                         <Input
                             label="Paid"
                             size={"sm"}
@@ -403,8 +432,8 @@ export default function Home() {
                                 const value = e.target.value;
                                 if (/^\d*\.?\d*$/.test(value)) {
                                     setFormData((prev) => ({
-                                    ...prev,
-                                    paid: value === '' ? 0: value,
+                                        ...prev,
+                                        paid: value === '' ? 0 : value,
                                     }));
                                 }
                             }}
@@ -431,6 +460,16 @@ export default function Home() {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
+                        <Checkbox
+                                isSelected={printReceipt}
+                                onValueChange={e => setPrintReceipt(e)}
+                                color="danger"
+                            >Print Receipt</Checkbox>
+                        <Checkbox
+                                checked={printLabel}
+                                onValueChange={e => setPrintLabel(e)}
+                                color="danger"
+                            >Print Label</Checkbox>
                         <NextUIButton
                             ref={resetButtonRef}
                             disabled={isLoading}
@@ -465,7 +504,7 @@ export default function Home() {
                                 }])
                                 getInvoiceNo().then(res => {
                                     setFormData((prev) => {
-                                        prev.invoiceNo = storeName +'-'+res.toString()
+                                        prev.invoiceNo = storeName + '-' + res.toString()
                                         return {...prev}
                                     })
                                 })
@@ -478,7 +517,7 @@ export default function Home() {
                             disabled={isLoading}
                             variant="shadow"
                             className="w-full bg-[#f37d2d] text-white font-bold shadow-lg shadow-warning/40"
-                        >Save & Print</NextUIButton>
+                        >Save</NextUIButton>
                     </form>
                 </div>
                 <div

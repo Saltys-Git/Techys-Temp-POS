@@ -9,7 +9,6 @@ import {
     or,
     orderBy,
     query,
-    QueryFieldFilterConstraint,
     serverTimestamp, Timestamp,
     updateDoc,
     where,
@@ -171,6 +170,10 @@ export async function getOrdersData() {
             issue: string;
             preparedBy: string;
             paid: number;
+            items: {
+                name: string;
+                total: number;
+            }[]
         }[] = []
         try{
             querySnapshot.forEach((order)=>{
@@ -183,6 +186,7 @@ export async function getOrdersData() {
                     issue: order.data().issue,
                     total: order.data().total,
                     paid: order.data().paid,
+                    items: order.data().items,
                 })
             })
         }finally {
