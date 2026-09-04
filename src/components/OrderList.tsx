@@ -1,11 +1,12 @@
 import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-org/modal";
-import {Button as NextUIButton, useDisclosure, Card, CardBody, Spinner, Input} from "@nextui-org/react";
-import { Separator } from "./ui/separator";
-import { useEffect, useState } from "react";
-import { NotebookTabs, RefreshCcw } from 'lucide-react';
+import {Button as NextUIButton, Input, Spinner, useDisclosure} from "@nextui-org/react";
+import {Separator} from "./ui/separator";
+import {useCallback, useDeferredValue, useEffect, useMemo, useState} from "react";
+import {NotebookTabs, RefreshCcw} from 'lucide-react';
 import Swal from "sweetalert2";
-import { getOrderDataById, getOrdersData } from "@/lib/firebaseActions";
+import {getOrderDataById, getOrdersData} from "@/lib/firebaseActions";
 import {Timestamp} from "@firebase/firestore";
+import VirtualOrderList from "@/components/VirtualOrderList";
 
 type FormData = {
     invoiceNo: string;
@@ -77,6 +78,86 @@ export default function OrderList({ updateForm, updateItem }: ChildProps){
         getOrders()
     },[isOpen])
 
+    const deferredInput = useDeferredValue(input);
+
+
+    const filteredOrders = useMemo(() => {
+        if (!deferredInput.trim()) {
+            return modalData;
+        }
+
+        const search = deferredInput.toLowerCase();
+
+        return modalData.filter((item) =>
+            item.invoiceNo.toLowerCase().includes(search) ||
+            item.customerName.toLowerCase().includes(search) ||
+            item.preparedBy.toLowerCase().includes(search) ||
+            item.issue.toLowerCase().includes(search)
+        );
+    }, [deferredInput, modalData]);
+
+
+
+    const handleOrderSelect = useCallback(async (id: string) => {
+        if (isOrderLoading) return;
+
+        setIsOrderLoading(true);
+
+        try {
+            const res = await getOrderDataById(id);
+
+            if (res.result && res.data) {
+                updateForm({
+                    invoiceNo: res.data.invoiceNo,
+                    createdAt: new Timestamp(
+                        res.data.createdAt.seconds,
+                        res.data.createdAt.nanoseconds
+                    ).toDate(),
+                    preparedBy: res.data.preparedBy,
+                    paidBy: res.data.paidBy,
+                    customerName: res.data.customerName,
+                    customerEmail: res.data.customerEmail,
+                    customerPhone: res.data.customerPhone,
+                    issue: res.data.issue,
+                    discount: res.data.discount,
+                    subTotal: res.data.subTotal,
+                    vat: res.data.vat,
+                    total: res.data.total,
+                    paid: res.data.paid,
+                    change: res.data.change,
+                    balance: res.data.balance,
+                });
+
+                updateItem(res.data.items);
+
+                await Swal.fire({
+                    title: "Success!",
+                    text: "Order placed to the POS.",
+                    icon: "success",
+                    confirmButtonText: "Ok",
+                });
+
+                onCloseWorks();
+            } else {
+                await Swal.fire({
+                    title: "Error!",
+                    text:
+                        res.error === "Not Found"
+                            ? "Order not found in the database."
+                            : "Something went wrong. Please try again.",
+                    icon: "error",
+                });
+            }
+        } finally {
+            setIsOrderLoading(false);
+        }
+    }, [
+        isOrderLoading,
+        updateForm,
+        updateItem,
+        onCloseWorks,
+    ]);
+
     return(
         <>
             <div className="flex flex-row space-x-2 justify-center items-center">
@@ -137,7 +218,7 @@ export default function OrderList({ updateForm, updateItem }: ChildProps){
                                         : (
                                             <>
                                                 {modalData.length > 0 ? (
-                                                        <>
+                                                        /*<>
                                                             {(input !== '' ? modalData.filter((item) => Object.values(item).some((value) => value.toString().toLowerCase().includes(input.toLowerCase()))) :modalData).map((item, index) => {
                                                                 return (
                                                                     <Card isPressable={!isOrderLoading} isHoverable key={index} onPress={() => {
@@ -198,7 +279,12 @@ export default function OrderList({ updateForm, updateItem }: ChildProps){
                                                                     </Card>
                                                                 )
                                                             })}
-                                                        </>
+                                                        </>*/
+                                                    <VirtualOrderList
+                                                        orders={filteredOrders}
+                                                        onSelect={handleOrderSelect}
+                                                        disabled={isOrderLoading}
+                                                    />
                                                     )
                                                     :
                                                     (

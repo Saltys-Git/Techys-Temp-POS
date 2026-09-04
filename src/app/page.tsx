@@ -518,6 +518,25 @@ export default function Home() {
                             variant="shadow"
                             className="w-full bg-[#f37d2d] text-white font-bold shadow-lg shadow-warning/40"
                         >Save</NextUIButton>
+                        {/*<NextUIButton
+                            onPress={()=>{
+                                setIsLoading(true)
+                                PrintLabel(formData).then(() => {
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        text: 'Order added to the database.',
+                                        icon: 'success',
+                                        confirmButtonText: 'Ok'
+                                    }).then(() => {
+                                        setIsLoading(false)
+                                    })
+                                })
+                            }}
+                            isLoading={isLoading}
+                            disabled={isLoading}
+                            variant="shadow"
+                            className="w-full bg-[#f37d2d] text-white font-bold shadow-lg shadow-warning/40"
+                        >Print Label</NextUIButton>*/}
                     </form>
                 </div>
                 <div

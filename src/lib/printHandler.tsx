@@ -950,3 +950,286 @@ export default async function PrintReceipt(formData: {
     }
 
 }
+
+
+
+export async function PrintLabel(formData: {
+    invoiceNo: string;
+    createdAt: Date | undefined;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    issue: string;
+}) {
+    Font.register({
+        family: "Open Sans",
+        fonts: [
+            {
+                src: "https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-regular.ttf",
+            },
+            {
+                src: "https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-700.ttf",
+                fontWeight: 700,
+            },
+            {
+                src: "https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-800.ttf",
+                fontWeight: 800,
+            },
+        ],
+    });
+    const canvas = document.createElement("canvas");
+    JsBarcode(canvas, formData.invoiceNo ?? "00", {
+        displayValue: false,
+        height: 30,
+    });
+    const barcode = canvas.toDataURL();
+    const OrderLabel = (
+        <Document title={"Label No-" + formData.invoiceNo}>
+            <Page
+                fixed
+                size={{width: 300, height: undefined}}
+                style={{
+                    flexDirection: "column",
+                    // backgroundColor: "#ff0000",
+                    height: "auto",
+                    paddingVertical:0
+                }}
+            >
+                <View
+                    style={{
+                        flexDirection: "column",
+                        height: "auto",
+                        paddingLeft: "8px",
+                        paddingRight: "8px",
+                        paddingBottom: "8px",
+                    }}
+                >
+                    <View
+                        style={{
+                            height: "auto",
+                            width: "100%",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginBottom: "3px",
+                        }}
+                    >
+                        <Image
+                            src={logo.src}
+                            style={{
+                                width: "50%",
+                            }}
+                        />
+                    </View>
+                    <Text
+                        style={{
+                            fontFamily: "Open Sans",
+                            fontSize: "12px",
+                            fontWeight: 800,
+                            width: "100%",
+                            textAlign: "center",
+                            marginBottom: "1px",
+                        }}
+                    >
+                        Techy&apos;s World Ltd
+                    </Text>
+                    </View>
+                    <View style={{marginTop: "4px"}}>
+                        <View
+                            style={{
+                                justifyContent: "flex-start",
+                                alignItems: "center",
+                                flexDirection: "row",
+                                gap: 1
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "Open Sans",
+                                    fontWeight: 700,
+                                    fontSize: "8px",
+                                }}
+                            >
+                                Invoice No :
+                            </Text>
+                            <Text
+                                style={{
+                                    fontSize: "8px",
+                                    marginLeft: "1px",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {formData.invoiceNo}
+                            </Text>
+                        </View>
+                        <View
+                            style={{
+                                justifyContent: "flex-start",
+                                alignItems: "center",
+                                flexDirection: "row",
+                                gap: 1
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "Open Sans",
+                                    fontWeight: 700,
+                                    fontSize: "8px",
+                                }}
+                            >
+                                Date :
+                            </Text>
+                            <Text
+                                style={{
+                                    fontSize: "8px",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {(formData.createdAt ?? new Date(Date.now())).toUTCString()}
+                            </Text>
+                        </View>
+                        <View
+                            style={{
+                                justifyContent: "flex-start",
+                                alignItems: "center",
+                                flexDirection: "row",
+                                gap: 1
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "Open Sans",
+                                    fontWeight: 700,
+                                    fontSize: "8px",
+                                }}
+                            >
+                                Issue :
+                            </Text>
+                            <Text
+                                style={{
+                                    fontSize: "8px",
+                                    marginLeft: "1px",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {formData.issue}
+                            </Text>
+                        </View>
+                        <View
+                            style={{
+                                justifyContent: "flex-start",
+                                alignItems: "center",
+                                flexDirection: "row",
+                                gap: 1
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "Open Sans",
+                                    fontWeight: 700,
+                                    fontSize: "8px",
+                                }}
+                            >
+                                Customer Name :
+                            </Text>
+                            <Text
+                                style={{
+                                    fontSize: "8px",
+                                    marginLeft: "1px",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {formData.customerName}
+                            </Text>
+                        </View>
+                        <View
+                            style={{
+                                justifyContent: "flex-start",
+                                alignItems: "center",
+                                flexDirection: "row",
+                                gap: 1
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "Open Sans",
+                                    fontWeight: 700,
+                                    fontSize: "8px",
+                                }}
+                            >
+                                Customer Phone :
+                            </Text>
+                            <Text
+                                style={{
+                                    fontSize: "8px",
+                                    marginLeft: "1px",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {formData.customerPhone}
+                            </Text>
+                        </View>
+                    </View>
+                    <View
+                        style={{
+                            marginTop: "4px",
+                            marginBottom: "4px",
+                            width: "100%",
+                            height: "30px",
+                        }}
+                    >
+                        <Image src={barcode}/>
+                    </View>
+            </Page>
+        </Document>
+    )
+    const blob = pdf(OrderLabel).toBlob();
+    blob.then((data) => {
+        handlePrint(data, formData.invoiceNo ?? "00");
+    });
+
+    function handlePrint(data: Blob, invoiceNo: string) {
+        const printService = new WebSocketPrinter({
+            onConnect: function () {
+            },
+            onDisconnect: function () {
+            },
+            onUpdate: function () {
+            },
+        });
+
+        function printPDF() {
+            const blobToBase64 = (blob: Blob) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                return new Promise((resolve) => {
+                    reader.onloadend = () => {
+                        resolve(reader.result as string);
+                    };
+                });
+            };
+            blobToBase64(data).then((res) => {
+                const base64 = (res as string).split(",")[1];
+                printService.submit({
+                    type: "LABEL",
+                    url: "file.pdf",
+                    file_content: base64,
+                });
+            });
+        }
+
+        if (printService.isConnected()) {
+            printPDF();
+        } else {
+            setTimeout(() => {
+                if (printService.isConnected()) {
+                    printPDF();
+                } else {
+                    alert("WebApp Hardware Bridge not running");
+                    saveAs(data, "Invoice No-" + invoiceNo + ".pdf");
+                    // window.open(encodedString);
+                }
+            }, 1000);
+        }
+    }
+
+}
