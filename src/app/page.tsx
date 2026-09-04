@@ -18,7 +18,7 @@ import {CircleX, Plus} from "lucide-react";
 import {Card, CardBody} from "@nextui-org/card";
 import {AddToDB, getInvoiceNo} from "@/lib/firebaseActions";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import PrintReceipt from "@/lib/printHandler";
+import PrintReceipt, {PrintLabel} from "@/lib/printHandler";
 import UserAddDial from "@/components/UserAddDial";
 import OrderList from "@/components/OrderList";
 import SelectStoreModal from "@/components/SelectStoreModal";
@@ -160,7 +160,7 @@ export default function Home() {
                 icon: 'error',
                 confirmButtonText: 'Ok'
             })
-            if(printReceipt){
+            if (printReceipt) {
                 PrintReceipt(formData, items).then(() => {
                     Swal.fire({
                         title: 'Success!',
@@ -176,7 +176,41 @@ export default function Home() {
                         }, 500)
                     })
                 })
-            }else{
+            } else if (printLabel) {
+                PrintLabel(formData).then(() => {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Order added to the database.',
+                        icon: 'success',
+                        confirmButtonText: 'Ok'
+                    }).then(() => {
+                        setIsLoading(false)
+                        setTimeout(() => {
+                            if (resetButtonRef.current !== null) {
+                                resetButtonRef.current.click()
+                            }
+                        }, 500)
+                    })
+                })
+            } else if (printReceipt && printLabel) {
+                PrintReceipt(formData, items).then(() => {
+                    PrintLabel(formData).then(() => {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Order added to the database.',
+                            icon: 'success',
+                            confirmButtonText: 'Ok'
+                        }).then(() => {
+                            setIsLoading(false)
+                            setTimeout(() => {
+                                if (resetButtonRef.current !== null) {
+                                    resetButtonRef.current.click()
+                                }
+                            }, 500)
+                        })
+                    })
+                })
+            } else {
                 Swal.fire({
                     title: 'Success!',
                     text: 'Order added to the database.',
@@ -461,15 +495,15 @@ export default function Home() {
                             </SelectContent>
                         </Select>
                         <Checkbox
-                                isSelected={printReceipt}
-                                onValueChange={e => setPrintReceipt(e)}
-                                color="danger"
-                            >Print Receipt</Checkbox>
+                            isSelected={printReceipt}
+                            onValueChange={e => setPrintReceipt(e)}
+                            color="danger"
+                        >Print Receipt</Checkbox>
                         <Checkbox
-                                checked={printLabel}
-                                onValueChange={e => setPrintLabel(e)}
-                                color="danger"
-                            >Print Label</Checkbox>
+                            checked={printLabel}
+                            onValueChange={e => setPrintLabel(e)}
+                            color="danger"
+                        >Print Label</Checkbox>
                         <NextUIButton
                             ref={resetButtonRef}
                             disabled={isLoading}
@@ -519,7 +553,7 @@ export default function Home() {
                             className="w-full bg-[#f37d2d] text-white font-bold shadow-lg shadow-warning/40"
                         >Save</NextUIButton>
                         {/*<NextUIButton
-                            onPress={()=>{
+                            onPress={() => {
                                 setIsLoading(true)
                                 PrintLabel(formData).then(() => {
                                     Swal.fire({

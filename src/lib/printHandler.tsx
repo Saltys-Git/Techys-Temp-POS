@@ -102,6 +102,7 @@ export default async function PrintReceipt(formData: {
                             src={logo.src}
                             style={{
                                 width: "50%",
+                                aspectRatio: 1
                             }}
                         />
                     </View>
@@ -860,12 +861,16 @@ export default async function PrintReceipt(formData: {
                     <View
                         style={{
                             marginTop: "4px",
-                            marginBottom: "4px",
+                            marginBottom: "1px",
                             width: "100%",
                             height: "30px",
+                            alignItems: "center",
                         }}
                     >
-                        <Image src={barcode}/>
+                        <Image style={{
+                            width: "100%",
+                            height: "30px"
+                        }} src={barcode}/>
                     </View>
                     <View
                         style={{
@@ -980,14 +985,14 @@ export async function PrintLabel(formData: {
     const canvas = document.createElement("canvas");
     JsBarcode(canvas, formData.invoiceNo ?? "00", {
         displayValue: false,
-        height: 30,
+        height: 20,
     });
     const barcode = canvas.toDataURL();
     const OrderLabel = (
         <Document title={"Label No-" + formData.invoiceNo}>
             <Page
                 fixed
-                size={{width: 300, height: undefined}}
+                size={{width: 162.2, height: undefined}}
                 style={{
                     flexDirection: "column",
                     // backgroundColor: "#ff0000",
@@ -1001,7 +1006,7 @@ export async function PrintLabel(formData: {
                         height: "auto",
                         paddingLeft: "8px",
                         paddingRight: "8px",
-                        paddingBottom: "8px",
+                        paddingBottom: "1px",
                     }}
                 >
                     <View
@@ -1016,27 +1021,27 @@ export async function PrintLabel(formData: {
                         <Image
                             src={logo.src}
                             style={{
-                                width: "50%",
+                                width: "15%",
+                                aspectRatio: 1
                             }}
                         />
                     </View>
                     <Text
                         style={{
                             fontFamily: "Open Sans",
-                            fontSize: "12px",
+                            fontSize: "7px",
                             fontWeight: 800,
                             width: "100%",
                             textAlign: "center",
-                            marginBottom: "1px",
                         }}
                     >
                         Techy&apos;s World Ltd
                     </Text>
                     </View>
-                    <View style={{marginTop: "4px"}}>
+                    <View style={{marginTop: "1px"}}>
                         <View
                             style={{
-                                justifyContent: "flex-start",
+                                justifyContent: "space-between",
                                 alignItems: "center",
                                 flexDirection: "row",
                                 gap: 1
@@ -1046,14 +1051,14 @@ export async function PrintLabel(formData: {
                                 style={{
                                     fontFamily: "Open Sans",
                                     fontWeight: 700,
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                 }}
                             >
                                 Invoice No :
                             </Text>
                             <Text
                                 style={{
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                     marginLeft: "1px",
                                     fontWeight: "bold",
                                 }}
@@ -1063,7 +1068,7 @@ export async function PrintLabel(formData: {
                         </View>
                         <View
                             style={{
-                                justifyContent: "flex-start",
+                                justifyContent: "space-between",
                                 alignItems: "center",
                                 flexDirection: "row",
                                 gap: 1
@@ -1073,14 +1078,14 @@ export async function PrintLabel(formData: {
                                 style={{
                                     fontFamily: "Open Sans",
                                     fontWeight: 700,
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                 }}
                             >
                                 Date :
                             </Text>
                             <Text
                                 style={{
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                     fontWeight: "bold",
                                 }}
                             >
@@ -1089,7 +1094,7 @@ export async function PrintLabel(formData: {
                         </View>
                         <View
                             style={{
-                                justifyContent: "flex-start",
+                                justifyContent: "space-between",
                                 alignItems: "center",
                                 flexDirection: "row",
                                 gap: 1
@@ -1099,14 +1104,14 @@ export async function PrintLabel(formData: {
                                 style={{
                                     fontFamily: "Open Sans",
                                     fontWeight: 700,
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                 }}
                             >
                                 Issue :
                             </Text>
                             <Text
                                 style={{
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                     marginLeft: "1px",
                                     fontWeight: "bold",
                                 }}
@@ -1116,7 +1121,7 @@ export async function PrintLabel(formData: {
                         </View>
                         <View
                             style={{
-                                justifyContent: "flex-start",
+                                justifyContent: "space-between",
                                 alignItems: "center",
                                 flexDirection: "row",
                                 gap: 1
@@ -1126,14 +1131,14 @@ export async function PrintLabel(formData: {
                                 style={{
                                     fontFamily: "Open Sans",
                                     fontWeight: 700,
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                 }}
                             >
                                 Customer Name :
                             </Text>
                             <Text
                                 style={{
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                     marginLeft: "1px",
                                     fontWeight: "bold",
                                 }}
@@ -1143,7 +1148,7 @@ export async function PrintLabel(formData: {
                         </View>
                         <View
                             style={{
-                                justifyContent: "flex-start",
+                                justifyContent: "space-between",
                                 alignItems: "center",
                                 flexDirection: "row",
                                 gap: 1
@@ -1153,14 +1158,14 @@ export async function PrintLabel(formData: {
                                 style={{
                                     fontFamily: "Open Sans",
                                     fontWeight: 700,
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                 }}
                             >
                                 Customer Phone :
                             </Text>
                             <Text
                                 style={{
-                                    fontSize: "8px",
+                                    fontSize: "6px",
                                     marginLeft: "1px",
                                     fontWeight: "bold",
                                 }}
@@ -1171,13 +1176,17 @@ export async function PrintLabel(formData: {
                     </View>
                     <View
                         style={{
-                            marginTop: "4px",
-                            marginBottom: "4px",
+                            marginTop: "1px",
+                            marginBottom: "1px",
                             width: "100%",
-                            height: "30px",
+                            height: "20px",
+                            alignItems: "center",
                         }}
                     >
-                        <Image src={barcode}/>
+                        <Image style={{
+                            width: "100%",
+                            height: "20px",
+                        }} src={barcode}/>
                     </View>
             </Page>
         </Document>
